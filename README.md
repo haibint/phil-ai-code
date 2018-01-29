@@ -31,6 +31,16 @@ This is ready and works, but not in all browsers (especially not on Windows). Th
 A finite state machine demonstration. For example, an FSM describing the behaviour of a virtual pet that sleeps, approaches when fed or treated well, and becomes bored or angry.
 
 
+### 5. ANN demo
+
+A simple demonstration of a neural network. A simple XOR learning network with one hidden layer, 2 inputs, one output would be enough. But it should show how the learning proceeds, the synaptic weights at each step, and especially how the backpropagation algorithm does its thing. A graphical representation as an aid to non-technical people, to understand how learning works in an ANN.
+
+
+### 5. ANN recommendations
+
+A simple course recommendation example using a neural network to fuzzily match a course recommendation to a set of user preferences. Not a very good example, and no usable user interface.
+
+
 ### 6. Simulated evolution
 
 A self-running game with bacteria and amoebas. In a rectangular 2D world, bacteria of two colours are created randomly or in patterns, covering the ground. Amoebas eat the bacteria. If they have collected enough energy from eating bacteria, they find another amoeba and procreate, creating a (small) random number of children. Variant: they split into two amoebas asexually, changing their genome by a random mutation that occurs with a given (small) probability. Green bacteria are good for the amoeba’s health. Red bacteria are bad and weaken the amoeba.
