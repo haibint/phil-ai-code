@@ -1,0 +1,4 @@
+classic.html: algorithm to solve ttt (done)
+ann: artificial neural network, learns from observing human play
+
+

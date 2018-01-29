@@ -1,0 +1,540 @@
+<html>
+    <head>
+        <title>TicTacToe</title>
+        <script type="text/javascript" src="phaser-2.8.4.min.js"></script>
+        <script type="text/javascript" src="brain.js"></script>
+    </head>
+    <body>
+	<h1>TicTacToe</h1>
+	<p><i>Try things out below, but remember: what you type below will not be saved and will be lost if you reload the page. Please save your rules yourself by copy&pasting them into a text document on your own computer!</i></p>
+
+	<button type="button" onclick="newgame()">New Game</button>
+	<button onclick="learningmode()">Learning mode</button>
+	<button onclick="anntrain()">Train</button> 
+	<button onclick="playingmode()">Playing mode</button>&nbsp; &nbsp; &nbsp; &nbsp; 
+	<button onclick="annforget()">Forget everything</button>
+	<button onclick="annsave()">Save net</button>
+	<button onclick="annload()">Load net</button>
+	<button onclick="annshow()">Show learned</button>
+	<button onclick="annsavelearned()">Copy/save to textarea</button>
+	<button onclick="annloadlearned()">Load from textarea</button><p/>
+	<div id="mode"></div>
+	<div id="debug"></div>
+	<table valign="top">
+	    <tr><td valign="top">
+		<div id="phasergame"></div>
+	    </td><td valign="top">
+		<textarea id="code" rows="35" cols="60" autofocus wrap="soft">
+		</textarea>
+	    </td>
+	    <td valign="top">
+		<div id="learned">
+		</div>		
+	    </td>
+	    </tr></table>
+
+	<script>         
+	 //alert(Math.max.apply(null, xx2));
+
+	 var game = new Phaser.Game(700, 500, Phaser.AUTO, 'phasergame', { preload: preload, create: create, update: update });
+	 var maxx = 300;
+	 var maxy = 300;
+	 var textx = 500;
+	 var texty = 100;
+	 var offsetx = 0;
+	 var offsety = 0;
+	 var g; // Graphics
+	 var black, x, o; // graphics tiles
+	 var text;
+	 var counter = 0;
+	 var board=[];
+	 var sprites=[];
+	 var move;
+	 var mode = "LEARN"; // or PLAY
+
+	 // For ANN, the human moves made in one round
+	 var recordedx=[];
+	 var recordedo=[];
+	 var recorded=[];
+
+	 // Neural network
+
+	 ANNLR=0.4;
+	 ANNHIDDEN=[32,20];
+	 AFUNC='sigmoid';
+	 //AFUNC='tanh';
+	 //AFUNC='relu';
+	 
+	 //var net = new brain.NeuralNetwork({activation: AFUNC});
+
+	 var net = new brain.NeuralNetwork( {
+	     activation: AFUNC, // activation function
+	     hiddenLayers: ANNHIDDEN,
+	     learningRate: ANNLR // global learning rate, useful when training using streams
+	 });
+
+	 
+	 function preload() {
+	     //game.load.spritesheet('button', 'assets/buttons/button_sprite_sheet.png', 193, 71);
+	     game.load.image('black', 'black.png');
+	     game.load.image('x', 'x.png');
+	     game.load.image('o', 'o.png');	     
+	 }
+
+	 function drawboard() {
+	     g.lineStyle(10, 0xffd900, 1);
+	     
+	     // draw the board
+	     g.moveTo(offsetx+(maxx/3), offsety);
+	     g.lineTo(offsetx+(maxx/3), offsety+maxy);
+	     g.moveTo(offsetx+(maxx/1.5), offsety);
+	     g.lineTo(offsetx+(maxx/1.5), offsety+maxy);
+	     
+	     g.moveTo(offsetx, offsety+(maxy/3));
+	     g.lineTo(offsetx+maxx, offsety+(maxy/3));
+	     g.moveTo(offsetx, offsety+(maxy/1.5));
+	     g.lineTo(offsetx+maxx, offsety+(maxy/1.5));
+	     
+	 }
+
+	 function newgame () {
+	     text.text='';
+	     board = [];
+	     counter = 0;
+	     for ( var i=0; i<9; i++ ) {
+		 sprites[i].destroy();
+	     }
+	     sprites=[];
+	     recordedx=[];
+	     recordedo=[];
+	     g.clear();
+	     drawboard();
+
+	     style = { font: 'bold 14pt Arial', fill: 'white', align: 'left', wordWrap: true, wordWrapWidth: 450 };
+	     text = game.add.text( textx, texty, "Not started", style);
+	     text.anchor.setTo(0.5, 0.5);
+
+	     var rec=localStorage.getItem("recorded");
+	     recorded = JSON.parse(rec);
+	     text.text="Learned moves: " + recorded.length;
+	     
+	     for( var i=0; i<9; i++ ){
+		 put( 'black', i );
+		 board[i]=' ';
+	     }
+	 }
+
+	 function ANNrecordmove( player, board, move ){
+	     var out=[];
+	     // Encode the move into a binary vector
+	     for ( i=0; i<9; i++ ){
+		 if (i==move) {
+		     out[i]=1;
+		 } else {
+		     out[i]=0;
+		 }
+	     }
+
+	     //alert( "move: " + move+": "+out );
+
+	     // We encode x's and o's in two separate board arrays,
+	     // one after the other. So board10 has 18 elements.
+	     var board10 = [];
+	     for (var i=0; i<9; i++ ) {
+		 if (board[i]=='x') {board10.push(1);}
+		 else {board10.push(0);}
+	     }
+	     for (var i=0; i<9; i++ ) {
+		 if (board[i]=='o') {board10.push(1);}
+		 else {board10.push(0);}
+	     }
+
+	     //alert( "board10: "+board10+" board: "+board );
+	     if (player=='x') {
+		 recordedx.push({input: board10, output: out});
+	     } else {
+		 recordedo.push({input: board10, output: out});
+	     }
+	 }
+
+
+	 function annsave() {
+	     localStorage.setItem("network", net.toJSON() );
+	 }
+
+	 function annload() {
+	     net.fromJSON(localStorage.getItem("network"));
+	 }
+
+	 
+	 function annforget() {
+	     localStorage.setItem("recorded", JSON.stringify([]) );
+	     recordedx = [];
+	     recordedo = [];
+	     recorded = [];
+	 }
+
+
+	 function kbformat( kb ){
+	     var inpb="";
+	     var outpb="";
+	     for (var i=0; i<(kb["input"].length)/2; i++) {
+		 if( i>0 && i%3==0 ){ inpb+="<br>"; };
+		 var cand=kb["input"][i];
+		 if( kb["input"][i+9]==1 ) {cand="2";}
+		 inpb+=cand;
+	     }
+
+	     for (var i=0; i<(kb["output"].length); i++) {
+		 if( i>0 && i%3==0 ){ outpb+="<br>"; };
+		 var cand=kb["output"][i];
+		 outpb+=cand;
+	     }
+	     
+	     var ret="<table border=\"1\"><tr><td width=\"60\">"+inpb+"</td><td width=\"60\">"+outpb+"</td></tr></table>";
+	     return( ret );
+	 }
+	 
+	 function annshow() {
+	     var stored=localStorage.getItem("recorded");
+	     document.getElementById("learned").innerHTML="";
+	     if (stored==null){
+		 //alert(stored);
+		 document.getElementById("learned").innerHTML=stored;
+	     }
+	     else {
+		 //alert( JSON.stringify(JSON.parse(stored)));
+		 var kb=JSON.parse(stored);
+		 for( var i=0; i<kb.length; i++) {
+		     document.getElementById("learned").innerHTML+=kbformat(kb[i])+"<br/>";
+		 }
+		 //alert( JSON.stringify(JSON.parse(stored)));
+		 
+		 
+		 //document.getElementById("learned").innerHTML=JSON.stringify(JSON.parse(stored));
+	     }
+	 }
+
+	 function annsavelearned() {
+	     var stored=localStorage.getItem("recorded");
+	     document.getElementById("code").innerHTML="";
+	     if (stored==null){
+		 //alert(stored);
+		 document.getElementById("code").innerHTML="[]";
+	     }
+	     else {
+		 //alert( JSON.stringify(JSON.parse(stored)));
+		 document.getElementById("code").innerHTML=JSON.stringify(stored);
+	     }
+	     //alert( JSON.stringify(JSON.parse(stored)));
+	     
+	     
+	     //document.getElementById("learned").innerHTML=JSON.stringify(JSON.parse(stored));
+	 }
+
+	 function annloadlearned() {
+	     //var stored=localStorage.getItem("recorded");
+	     //document.getElementById("learned").innerHTML="";
+	     recorded=JSON.parse(document.getElementById("code").value);
+	     localStorage.setItem("recorded", JSON.stringify(recorded));
+	     alert("Loaded "+recorded.length+" stored moves.");
+	 }
+
+	 function listener( sprite ) {
+	     counter++;
+	     if (sprite.key === 'black')
+		 {
+		     sprite.loadTexture('x', 0, false);
+		     pos=sprites.indexOf( sprite );
+		     ANNrecordmove( 'x', board, pos );
+		     board[pos]='x';
+		     text.text = "Board: " + board;
+		 }
+
+	     if (checkwin(board)=='') {
+		 // Now call the AI move generator function to get the computer's move
+		 // Move will be a position (0-8) on the board
+		 // Keep asking for moves, until one is valid
+		 do {
+		     move = getAIMove( board );
+		     //alert( "board[move]="+board[move]+"*");
+		     //alert( "want to move to: "+move+" board="+board );
+		 } while ((board[move]!=' ') && (move!="-1"));
+		 if (move != "-1"){
+		     ANNrecordmove( 'o', board, move );
+		     board[move]='o';
+		     sprites[move].loadTexture('o', 0, false);
+		 }
+	     }
+
+	     if (checkwin(board)!=''){
+		 storewinnermoves();
+	     }
+	     update();	    
+	 }
+
+	 function checkwin( board ){
+	     // Board:
+	     // 0 1 2
+	     // 3 4 5
+	     // 6 7 8
+	     var chars=['x', 'o'];
+	     for( var i=0; i<2; i++ ){
+		 var c=chars[i];
+		 if (board[0]==c && board[1]==c && board[2]==c)
+		     return( c );
+		 if (board[3]==c && board[4]==c && board[5]==c)
+		     return( c );
+		 if (board[6]==c && board[7]==c && board[8]==c)
+		     return( c );
+		 if (board[0]==c && board[3]==c && board[6]==c)
+		     return( c );
+		 if (board[1]==c && board[4]==c && board[7]==c)
+		     return( c );
+		 if (board[2]==c && board[5]==c && board[8]==c)
+		     return( c );
+		 if (board[0]==c && board[4]==c && board[8]==c)
+		     return( c );
+		 if (board[2]==c && board[4]==c && board[6]==c)
+		     return( c );
+	     }
+
+	     if (board.indexOf(' ') == -1) {
+		 // The board is filled, but no one won (=draw)
+		 return( '-' );
+	     }
+	     return( '' );
+	 }
+	 
+
+	 // ***************** HERE THE MAGIC HAPPENS ********************
+	 ai6="\
+    function AIMove( board ) {\n\
+    var ret=[];\n\
+    //alert( mode+\" \"+board );\n\
+    if (mode==\"LEARN\") {\n\
+       eval( oldai );\n\
+       return( oldaimove(board) );\n\
+    }\n\
+    // do something random\n\
+    //while (board.indexOf(' ')!=-1) {\n\
+    //   var rnd = Math.floor(Math.random()*9);\n\
+    //   if (board[rnd]==' ') {\n\
+    //     return( rnd );\n\
+    //  } \n\
+    //}\n\
+  //}\n\
+  // Here we are in mode PLAY\n\
+  var board10 = [];\n\
+  for (var i=0; i<9; i++ ) {\n\
+    if (board[i]=='x') {board10.push(1);}\n\
+    else {board10.push(0);}\n\
+  }\n\
+  for (var i=0; i<9; i++ ) {\n\
+    if (board[i]=='o') {board10.push(1);}\n\
+    else {board10.push(0);}\n\
+  }\n\
+  //alert(\"here 1\");\n\
+  ret = net.run( board10 );\n\
+  //document.getElementById(\"debug\").innerHTML = \"Move: \"+ret;\n\
+  //document.getElementById(\"debug\").innerHTML = \"Ret: \"+ret;\n\
+  var maxi=Math.max.apply( null, ret );\n\
+  //alert( maxi );\n\
+  var move=ret.indexOf(maxi);\n\
+  //alert( maxi+\" : \"+move );\n\
+  if (board[move]!=' ') {\n\
+    // Oops. Network wants to make illegal move. Make a random one.\n\
+    alert(\"Net wants to make illegal move. Random instead.\");\n\
+    while (board.indexOf(' ')!=-1) {\n\
+       var rnd = Math.floor(Math.random()*9);\n\
+       if (board[rnd]==' ') {\n\
+         return( rnd );\n\
+      } \n\
+    }\n\
+  }\n\
+  return ( move );\n\
+}\n";
+
+
+	 oldai="\
+function oldaimove( board ) {\n\
+  // Third try. This applies the same logic as AIMove2, but to both parties.\n\
+  // This seems to play okay.\n\
+  // Winning sequence for human player: 2, 6, 8, 5. WHY DOES THIS HAPPEN?\n\
+  // CAN THE PROGRAM BE IMPROVED TO HANDLE THIS CASE?\n\
+  // Hint: try to play symmetrically: 0, ... (won't work).\n\
+  // Also: Something strange happens if human plays 0, 5, 2. How can the program win\n\
+  // in this case??? Why does it not win now? What exactly is the cause of the error?\n\
+  //\n\
+  // Board:\n\
+  // 0 1 2\n\
+  // 3 4 5\n\
+  // 6 7 8\n\
+  // First, see if we can take the central square.\n\
+  if ( board[4]==' ' ) {\n\
+    return( 4 );\n\
+  }\n\
+\n\
+  // If the opponent has two out of three of any of the following combinations, take the third!\n\
+  var thirdof=[ \"012\", \"345\", \"678\", \"036\", \"147\", \"258\", \"048\", \"246\" ];\n\
+\n\
+  // Now do the same test for our pieces\n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    ihave=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='o') {\n\
+        ihave++;\n\
+      }\n\
+    }\n\
+    if (ihave==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    opponenthas=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='x') {\n\
+	 opponenthas++;\n\
+      }\n\
+    }\n\
+\n\
+    if (opponenthas==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+\n\
+  // If we arrive here, no immediate threat was found. Play on the first empty position.\n\
+  return( board.indexOf(' '));\n\
+}\n";
+	 
+	 function annlog( log ) {
+	     //alert(log.toString());
+	     document.getElementById("debug").innerHTML="Error: "+log; // +" Iter:"+log;	     
+	 }
+	 
+	 function learningmode() {
+	     document.getElementById("mode").innerHTML="Mode: LEARN  HID="+ANNHIDDEN+" LR="+ANNLR+" FUNC="+AFUNC;
+	 }
+
+	 function anntrain() {
+	     document.getElementById("mode").innerHTML="Mode: TRAINING NETWORK with "+recorded.length+" patterns ...";
+	     net.train( recorded, {'log': true, errorThresh: 0.03, iterations: 8000} );
+	     document.getElementById("mode").innerHTML="Training completed.";
+	     playingmode();
+	 }
+
+	 function playingmode() {
+	     mode="PLAY";
+	     document.getElementById("mode").innerHTML="Mode: PLAY";
+	 }
+	 
+	 // This is the function that specifies which AI function will actually be used.
+	 function getAIMove( board ) {    
+	     // CHANGE THIS TO CALL A PARTICULAR AI FUNCTION:
+	     // ----------------------------------------------------------------------------------
+	     var code=document.getElementById("code").value;
+	     eval( code );
+	     
+	     // ----------------------------------------------------------------------------------
+	     return( AIMove(board) );
+	 }
+
+	 function put( letter, pos ) {
+	     // letter is one of ['x', 'o'], which are predefined sprite objects
+	     // pos is 0-8, counted in reading order from top left to bottom right
+	     sprites[pos] = game.add.sprite(offsetx+((pos%3)*(maxx/3))+5, offsety+(Math.floor(pos/3)*(maxy/3))+5, letter);
+	     sprites[pos].inputEnabled = true;
+	     sprites[pos].events.onInputDown.add(listener, this);
+	 }
+	 
+	 
+	 function create() {
+	     g = game.add.graphics(0, 0);
+
+	     // Draw board
+	     drawboard();
+
+	     // Initialise textarea
+	     document.getElementById("code").innerHTML=ai6;
+
+	     style = { font: 'bold 14pt Arial', fill: 'white', align: 'left', wordWrap: true, wordWrapWidth: 450 };
+	     text = game.add.text(textx, texty, "Not started", style);
+	     text.anchor.setTo(0.5, 0.5);
+	     text.text=board;
+	     
+	     //black = game.add.sprite(game.world.centerX, game.world.centerY, 'black');
+	     //x = game.add.sprite(game.world.centerX-100, game.world.centerY, 'x');
+	     //o = game.add.sprite(game.world.centerX, game.world.centerY-100, 'o');
+
+	     for( var i=0; i<9; i++ ){
+		 put( 'black', i );
+		 board[i]=' ';
+	     }
+
+	     // Neural network stuff
+	     // Reset recorded moves
+	     var stored=localStorage.getItem("recorded");
+	     if (stored==null){
+		 recorded=[];
+	     }
+	     else {
+		 recorded = JSON.parse(stored);
+	     }
+	     learningmode();	     
+	 }
+
+	 function storewinnermoves() {
+	     // Check if anyone won
+	     winner = checkwin( board );
+	     var stored=[];
+	     stored = JSON.parse(localStorage.getItem("recorded"));
+
+	     if ((winner == 'x') || (winner=='o')) {
+		 text.text = winner + " wins!";
+		 // Now store the winning moves
+		 if (winner=='x') {
+		     stored=stored.concat( recordedx );
+		 } else {
+		     stored=stored.concat( recordedo );
+		 }
+		 localStorage.setItem("recorded", JSON.stringify(stored));
+		 //alert(stored.length);
+		 recordedx=[];
+		 recordedo=[];
+
+		 //alert(  JSON.stringify(recorded) );
+		 //newgame();
+	     } else {
+		 if (winner=='-') {
+		     text.text = "It's a draw."
+		     // Push both sides' moves
+		     stored=stored.concat( recordedo );
+		     stored=stored.concat( recordedx );
+		     localStorage.setItem("recorded", JSON.stringify(stored));
+		     recordedx=[];
+		     recordedo=[];
+		 }
+	     }
+	     recorded=stored;
+	 }
+	 
+	 function update()
+	 {
+	 }
+	 
+	</script>
+    </body>
+</html>
+

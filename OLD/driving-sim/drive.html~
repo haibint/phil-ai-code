@@ -1,0 +1,155 @@
+<head>
+</head>
+<body>
+    <h1>Self-driving car example</h1>
+
+    <p>Manual: Cursor keys to steer, s to stop.</p>
+
+    <table width="100%">
+	<tr>
+	    <td width="800">
+		<canvas id="canvas" width="800" height="800"></canvas>
+	    </td>
+	    <td align="left" valign="top">
+		<h3>Sensors</h3>
+		<font color="#ff0000">Red: <span id="snl"></span></font><br/>
+		<font color="#0000ff">Blue: <span id="snr"></span></font><br/>
+		<font color="#ffb0b0">Pink: <span id="sfl"></span></font><br/>
+		<font color="#b0b0ff">Lightblue: <span id="sfr"></span></font><br/>
+		<font color="orange">Orange: <span id="sfa"></span></font><br/>
+	    </td>
+	</tr>
+    </table>
+
+    <script>
+
+     x = 120;
+     y = 160;
+     speed = 1;
+     angle = 0;
+     mod = 0;
+
+     canvas = document.getElementById("canvas");
+     context = canvas.getContext("2d");
+     canvas.focus();
+     car = new Image();
+     //car.src = "https://moral-robots.com/wp-content/uploads/2017/08/car.png";
+     car.src = "car.png";
+     background = new Image();
+     //background.src = "https://moral-robots.com/wp-content/uploads/2017/08/map1.png";
+     background.src = "map2.png";
+
+     // Sensor values for sensor (s) near (n) or far (f), right (r), left (l), or ahead (a)
+     snr=0;
+     snl=0;
+     sfr=0;
+     sfl=0;
+     sfa=0;
+
+     // Make sure the image is loaded first otherwise nothing will draw.
+     background.onload = function(){
+	 context.drawImage(background,0,0);   
+     }
+
+
+     document.addEventListener("keydown", keypress_handler, true);
+     document.addEventListener("keyup", keyup_handler, true);
+
+     var moveInterval = setInterval(function () {
+	 draw();
+     }, 50);
+
+     function draw() {
+	 context = canvas.getContext("2d");
+	 //context.clearRect(0, 0, 800, 800);
+
+	 //context.fillStyle = "rgb(200, 100, 220)";
+	 //context.fillRect(50, 50, 100, 100);
+
+	 x += (speed * mod) * Math.cos(Math.PI / 180 * angle);
+	 y += (speed * mod) * Math.sin(Math.PI / 180 * angle);
+	 
+	 if (x>800-(car.width/8)) {x=800-(car.width/8); mod=0;}
+	 if (x<0) {x=0; mod=0;}
+	 if (y>800) {y=800; mod=0;}
+	 if (y<0) {y=0; mod=0;}
+
+	 context.drawImage(background, 0, 0);
+	 context.save();
+	 context.translate(x-20, y+10);
+	 context.rotate(Math.PI / 180 * angle);
+	 context.drawImage(car, -20, -10, 40, 20);
+	 update_sensors( context, 20, 10, x, y, angle );
+	 //context.fillStyle="red";
+	 //context.fillRect( -20, -10, 40, 20 );
+	 context.restore();
+     }
+
+     function update_sensors( context, x, y, ox, oy, angle ) {
+
+	 var c2 = document.createElement("canvas");
+	 var ct2=c2.getContext("2d");
+	 //ct2.translate(ox-20, oy+10);
+	 ct2.rotate(Math.PI / 180 * angle);
+	 ct2.drawImage(background, 0, 0); 
+	 
+	 // blue sensor: near right
+	 sensor = ct2.getImageData( x, y+25, 5, 5 );
+	 id_snr=document.getElementById("snr");
+	 id_snr.innerHTML=sensor.data[0]+" "+sensor.data[1]+" "+sensor.data[2];
+	 context.fillStyle="#0000ff";
+	 context.fillRect( x, y-5, 5, 5 );
+
+	 // red sensor: near left
+	 sensor = ct2.getImageData( x, y+25, 5, 5 );
+	 id_snl=document.getElementById("snl");
+	 id_snl.innerHTML=sensor.data[0]+" "+sensor.data[1]+" "+sensor.data[2];
+	 context.fillStyle="#ff0000";
+	 context.fillRect( x, y-20, 5, 5 );
+
+	 sfr = context.getImageData( x+20, y, 5, 5 );
+	 sfl = context.getImageData( x+20, y-25, 5, 5 );
+	 sfa = context.getImageData( x+50, y-12, 5, 5 );
+
+	 // lightblue sensor: far right
+	 context.fillStyle="#b0b0ff";
+	 context.fillRect( x+20, y, 5, 5 );
+
+	 // pink sensor: far left
+	 context.fillStyle="#ffb0b0";
+	 context.fillRect( x+20, y-25, 5, 5 );
+
+	 // orange sensor: far ahead
+	 context.fillStyle="orange";
+	 context.fillRect( x+50, y-12, 5, 5 );
+	 
+     }
+     
+     function keyup_handler(event) {
+	 if (event.keyCode == 87 || event.keyCode == 83) {
+	     mod = 0;
+	 }
+     }
+
+     function keypress_handler(event) {
+	 console.log(event.keyCode);
+
+	 if (event.keyCode == 38) {
+	     mod = mod+1;
+	 }
+	 if (event.keyCode == 40) {
+	     mod = mod-1;
+	 }
+	 if (event.keyCode == 37) {
+	     angle -= 5;
+	 }
+	 if (event.keyCode == 39) {
+	     angle += 5;
+	 }
+	 if (event.keyCode == 83) { // s (stop)
+	     mod=0;
+	 }
+     }
+     
+    </script> 
+</body>

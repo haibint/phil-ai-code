@@ -1,0 +1,385 @@
+<html>
+    <head>
+        <title>TicTacToe</title>
+        <script type="text/javascript" src="phaser-2.8.4.min.js"></script>
+    </head>
+    <body>
+	<h1>TicTacToe</h1>
+	<p><i>Try things out below, but remember: what you type below will not be saved and will be lost if you reload the page. Please save your rules yourself by copy&pasting them into a text document on your own computer!</i></p>
+
+	<button type="button" onclick="newgame()">New Game</button>
+	<button onclick="loadai1()">Sequential(AI 1)</button>
+	<button onclick="loadai2()">Block (AI 2)</button>
+	<button onclick="loadai3()">Block&amp;attack (AI 3)</button>
+	<button onclick="loadai4()">Attack&amp;block (AI 4)</button><p/>
+
+	<table>
+	    <tr><td>
+		<div id="phasergame"></div>
+	    </td><td>
+		<textarea id="code" rows="35" cols="90" autofocus wrap="soft">
+		</textarea>
+	    </td></tr></table>
+
+	<script>         
+	 var game = new Phaser.Game(700, 500, Phaser.AUTO, 'phasergame', { preload: preload, create: create, update: update });
+	 var maxx = 300;
+	 var maxy = 300;
+	 var textx = 500;
+	 var texty = 100;
+	 var offsetx = 0;
+	 var offsety = 0;
+	 var g; // Graphics
+	 var black, x, o; // graphics tiles
+	 var text;
+	 var counter = 0;
+	 var board=[];
+	 var sprites=[];
+	 var move;
+
+	 function preload() {
+	     //game.load.spritesheet('button', 'assets/buttons/button_sprite_sheet.png', 193, 71);
+	     game.load.image('black', 'black.png');
+	     game.load.image('x', 'x.png');
+	     game.load.image('o', 'o.png');	     
+	 }
+
+	 function drawboard() {
+	     g.lineStyle(10, 0xffd900, 1);
+	     
+	     // draw the board
+	     g.moveTo(offsetx+(maxx/3), offsety);
+	     g.lineTo(offsetx+(maxx/3), offsety+maxy);
+	     g.moveTo(offsetx+(maxx/1.5), offsety);
+	     g.lineTo(offsetx+(maxx/1.5), offsety+maxy);
+	     
+	     g.moveTo(offsetx, offsety+(maxy/3));
+	     g.lineTo(offsetx+maxx, offsety+(maxy/3));
+	     g.moveTo(offsetx, offsety+(maxy/1.5));
+	     g.lineTo(offsetx+maxx, offsety+(maxy/1.5));
+	     
+	 }
+
+	 function newgame () {
+	     text.text='';
+	     board = [];
+	     counter = 0;
+	     for ( var i=0; i<9; i++ ) {
+		 sprites[i].destroy();
+	     }
+	     sprites=[];
+	     g.clear();
+	     drawboard();
+
+	     style = { font: 'bold 14pt Arial', fill: 'white', align: 'left', wordWrap: true, wordWrapWidth: 450 };
+	     text = game.add.text( textx, texty, "Not started", style);
+	     text.anchor.setTo(0.5, 0.5);
+	     text.text=board;
+	     
+	     for( var i=0; i<9; i++ ){
+		 put( 'black', i );
+		 board[i]=' ';
+	     }
+	     
+
+	 }
+
+	 function listener( sprite ) {
+	     counter++;
+	     if (sprite.key === 'black')
+		 {
+		     sprite.loadTexture('x', 0, false);
+		     pos=sprites.indexOf( sprite );
+		     board[pos]='x';
+		     text.text = "Board: " + board;
+		 }
+
+	     if (checkwin(board)=='') {
+		 // Now call the AI move generator function to get the computer's move
+		 // Move will be a valid position (0-8) on the board
+		 move = getAIMove( board );
+		 board[move]='o';
+		 sprites[move].loadTexture('o', 0, false);
+		 text.text = "Board: " + board;
+	     }
+
+	     update();	    
+	 }
+
+	 function checkwin( board ){
+	     // Board:
+	     // 0 1 2
+	     // 3 4 5
+	     // 6 7 8
+	     var chars=['x', 'o'];
+	     for( var i=0; i<2; i++ ){
+		 var c=chars[i];
+		 if (board[0]==c && board[1]==c && board[2]==c)
+		     return( c );
+		 if (board[3]==c && board[4]==c && board[5]==c)
+		     return( c );
+		 if (board[6]==c && board[7]==c && board[8]==c)
+		     return( c );
+		 if (board[0]==c && board[3]==c && board[6]==c)
+		     return( c );
+		 if (board[1]==c && board[4]==c && board[7]==c)
+		     return( c );
+		 if (board[2]==c && board[5]==c && board[8]==c)
+		     return( c );
+		 if (board[0]==c && board[4]==c && board[8]==c)
+		     return( c );
+		 if (board[2]==c && board[4]==c && board[6]==c)
+		     return( c );
+	     }
+	     
+	     return( '' );
+	 }
+	 
+
+	 // ***************** HERE THE MAGIC HAPPENS ********************
+	 ai1="\
+function AIMove( board ) {\n\
+  // First try: play on the first empty position you find.\n\
+  return( board.indexOf(' '));\n\
+}\n";
+
+	 ai2="\
+function AIMove( board ) {\n\
+  // Second try. This reacts well to threats of the opponent, but misses opportunities to win itself.\n\
+  // Board:\n\
+  // 0 1 2\n\
+  // 3 4 5\n\
+  // 6 7 8\n\
+  // First, see if we can take the central square.\n\
+  if ( board[4]==' ' ) {\n\
+    return( 4 );\n\
+  }\n\
+\n\
+  // If the opponent has two out of three of any of the following combinations, take the third!\n\
+  var thirdof=[ \"012\", \"345\", \"678\", \"036\", \"147\", \"258\", \"048\", \"246\" ];\n\
+  \n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    opponenthas=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='x') {\n\
+        opponenthas++;\n\
+      }\n\
+    }\n\
+\n\
+    if (opponenthas==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+  // If we arrive here, no immediate threat was found. Play on the first empty position.\n\
+  // This misses possible attacks.\n\
+  return( board.indexOf(' '));\n\
+}\n";
+
+	 ai3="\
+function AIMove( board ) {\n\
+  // Third try. This applies the same logic as AIMove2, but to both parties.\n\
+  // This seems to play okay.\n\
+  // Winning sequence for human player: 2, 6, 8, 5. WHY DOES THIS HAPPEN?\n\
+  // CAN THE PROGRAM BE IMPROVED TO HANDLE THIS CASE?\n\
+  // Hint: try to play symmetrically: 0, ... (won't work).\n\
+  // Also: Something strange happens if human plays 0, 5, 2. How can the program win\n\
+  // in this case??? Why does it not win now? What exactly is the cause of the error?\n\
+  //\n\
+  // Board:\n\
+  // 0 1 2\n\
+  // 3 4 5\n\
+  // 6 7 8\n\
+  // First, see if we can take the central square.\n\
+  if ( board[4]==' ' ) {\n\
+    return( 4 );\n\
+  }\n\
+\n\
+  // If the opponent has two out of three of any of the following combinations, take the third!\n\
+  var thirdof=[ \"012\", \"345\", \"678\", \"036\", \"147\", \"258\", \"048\", \"246\" ];\n\
+\n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    opponenthas=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='x') {\n\
+	 opponenthas++;\n\
+      }\n\
+    }\n\
+\n\
+    if (opponenthas==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+  // Now do the same test for our pieces\n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    ihave=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='o') {\n\
+        ihave++;\n\
+      }\n\
+    }\n\
+    if (ihave==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+  // If we arrive here, no immediate threat was found. Play on the first empty position.\n\
+  return( board.indexOf(' '));\n\
+}\n";
+
+	 ai4="\
+function AIMove( board ) {\n\
+  // Third try. This applies the same logic as AIMove2, but to both parties.\n\
+  // This seems to play okay.\n\
+  // Winning sequence for human player: 2, 6, 8, 5. WHY DOES THIS HAPPEN?\n\
+  // CAN THE PROGRAM BE IMPROVED TO HANDLE THIS CASE?\n\
+  // Hint: try to play symmetrically: 0, ... (won't work).\n\
+  // Also: Something strange happens if human plays 0, 5, 2. How can the program win\n\
+  // in this case??? Why does it not win now? What exactly is the cause of the error?\n\
+  //\n\
+  // Board:\n\
+  // 0 1 2\n\
+  // 3 4 5\n\
+  // 6 7 8\n\
+  // First, see if we can take the central square.\n\
+  if ( board[4]==' ' ) {\n\
+    return( 4 );\n\
+  }\n\
+\n\
+  // If the opponent has two out of three of any of the following combinations, take the third!\n\
+  var thirdof=[ \"012\", \"345\", \"678\", \"036\", \"147\", \"258\", \"048\", \"246\" ];\n\
+\n\
+  // Now do the same test for our pieces\n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    ihave=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='o') {\n\
+        ihave++;\n\
+      }\n\
+    }\n\
+    if (ihave==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+  for (var combination=0; combination<thirdof.length; combination++ ){\n\
+    opponenthas=0;\n\
+    for (var i=0; i<3; i++){\n\
+      if (board[thirdof[combination][i]]=='x') {\n\
+	 opponenthas++;\n\
+      }\n\
+    }\n\
+\n\
+    if (opponenthas==2){\n\
+      // loop again and take the empty position of this triple\n\
+      for (var i=0; i<3; i++){\n\
+        if (board[thirdof[combination][i]]==' ') {\n\
+          return( thirdof[combination][i] );\n\
+        }\n\
+      }\n\
+    }\n\
+  }\n\
+\n\
+\n\
+  // If we arrive here, no immediate threat was found. Play on the first empty position.\n\
+  return( board.indexOf(' '));\n\
+}\n";
+
+
+	 function loadai1() {
+	     document.getElementById("code").innerHTML=ai1;
+	 }
+
+	 function loadai2() {
+	     document.getElementById("code").innerHTML=ai2;
+	 }
+
+	 function loadai3() {
+	     document.getElementById("code").innerHTML=ai3;
+	 }
+
+	 function loadai4() {
+	     document.getElementById("code").innerHTML=ai4;
+	 }
+
+	 
+	 // This is the function that specifies which AI function will actually be used.
+	 function getAIMove( board ) {    
+	     // CHANGE THIS TO CALL A PARTICULAR AI FUNCTION:
+	     // ----------------------------------------------------------------------------------
+	     var code=document.getElementById("code").value;
+	     eval( code );
+	     
+	     // ----------------------------------------------------------------------------------
+	     return( AIMove(board) );
+	 }
+
+	 function put( letter, pos ) {
+	     // letter is one of ['x', 'o'], which are predefined sprite objects
+	     // pos is 0-8, counted in reading order from top left to bottom right
+	     sprites[pos] = game.add.sprite(offsetx+((pos%3)*(maxx/3))+5, offsety+(Math.floor(pos/3)*(maxy/3))+5, letter);
+	     sprites[pos].inputEnabled = true;
+	     sprites[pos].events.onInputDown.add(listener, this);
+	 }
+	 
+	 
+	 function create() {
+	     g = game.add.graphics(0, 0);
+
+	     // Draw board
+	     drawboard();
+
+	     // Initialise textarea
+	     document.getElementById("code").innerHTML=ai1;
+
+	     style = { font: 'bold 14pt Arial', fill: 'white', align: 'left', wordWrap: true, wordWrapWidth: 450 };
+	     text = game.add.text(textx, texty, "Not started", style);
+	     text.anchor.setTo(0.5, 0.5);
+	     text.text=board;
+	     
+	     //black = game.add.sprite(game.world.centerX, game.world.centerY, 'black');
+	     //x = game.add.sprite(game.world.centerX-100, game.world.centerY, 'x');
+	     //o = game.add.sprite(game.world.centerX, game.world.centerY-100, 'o');
+
+	     for( var i=0; i<9; i++ ){
+		 put( 'black', i );
+		 board[i]=' ';
+	     }
+	     
+	 }
+	 
+	 function update()
+	 {
+	     // Check if anyone won
+	     winner = checkwin( board );
+	     if (winner != '' ) {
+		 text.text = winner + " wins!";
+		 //newgame();
+	     }
+	 }
+	 
+	</script>
+    </body>
+</html>
+

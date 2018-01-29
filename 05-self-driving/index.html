@@ -1,0 +1,195 @@
+<html>
+    <head>
+        <title>Self-driving car demonstration</title>
+        <script type="text/javascript" src="phaser-2.8.4.min.js"></script>
+    </head>
+    <body>
+        <script>
+         
+         var game = new Phaser.Game(1280, 839, Phaser.AUTO, 'main_game', { preload: preload, create: create, update: update });
+	 var MAP='map1.png';
+	 
+         function preload() {
+             //game.load.spritesheet('map', MAP);
+             game.load.spritesheet('car','car4.png');
+	     game.load.image('map', MAP);
+             game.load.spritesheet('reddot','red-dot-21x21.png');
+             game.load.spritesheet('bluedot','blue-dot-21x21.png');
+             game.load.spritesheet('orangedot','orange-dot-21x21.png');
+         }
+         
+         var cursors;
+         var velocity = 0;
+	 var text;
+	 var style;
+	 var map;
+	 var bitmap;
+	 var graphics;
+	 var frame;
+	 var car;
+	 
+         function create() {
+             /*Enable Physics Engine*/
+             game.physics.startSystem(Phaser.Physics.P2JS);
+
+             /*Adding Map*/
+             //map = game.add.sprite(0,0,'mapcopy');
+	     bitmap = game.make.bitmapData( 800, 800 );
+	     bitmap.draw( 'map', 0, 0, 800, 800 );
+	     bitmap.update();
+	     map = bitmap.addToWorld( 0, 0 );
+	     //game.add.sprite( 0, 0, 'map' );
+
+             /*Adding car*/
+             car = game.add.sprite(60,60,'car');
+             game.physics.p2.enable(car);
+             car.body.angle = 90;
+
+	     /* Add dot */
+	     dotFR = game.add.sprite(100,100,'reddot');
+	     dotFL = game.add.sprite(100,100,'reddot');
+	     dotR = game.add.sprite(100,100,'bluedot');
+	     dotL = game.add.sprite(100,100,'bluedot');
+	     dotA = game.add.sprite(100,100,'orangedot');
+
+             cursors = game.input.keyboard.createCursorKeys();
+
+	     style = { font: 'bold 14pt Arial', fill: 'white', align: 'left', wordWrap: true, wordWrapWidth: 450 };
+	     text = game.add.text(1000, 100, "Not started", style);
+	     text.anchor.setTo(0.5, 0.5);
+	     frame=0;
+	 }
+
+	 function ctext( c ) {
+	     if (c==0xff000000) {return("Border");}
+	     if (c==4280056860) {return("Grass");}
+	     if (c==0xffffffff) {return("Street");}
+	     return("undefined");
+	 }
+
+	 
+	 function selfdrive1() {
+	     // Minimal self-driving ability
+	     // 1. go slowly forward
+	     velocity=velocity+1;
+
+	     // 2. If colour at left dot is black, go a bit right and slower
+	     if (cFL == 0xff000000 ||  cFL== 4280056860) {
+                 car.body.angularVelocity = 35*(velocity/1000);
+		 velocity=10;
+		 // don't look further, else if both dots see black, we'll go straight out of the street!
+		 return;
+	     }
+
+	     // 3. If colour at right dot is black, go a bit left and slower
+	     if (cFR == 0xff000000 || cFR == 4280056860) {
+                 car.body.angularVelocity = -35*(velocity/1000);
+		 velocity=10;
+	     }
+	     
+	 }
+	 
+         function update()
+         {
+	     // Assume we are self-driving. Disable this on any keypress.
+	     var auto=true;
+	     frame++;
+
+	     // If enter pressed, restart
+	     if (game.input.keyboard.isDown(Phaser.Keyboard.ENTER)) {
+		 car.angle = 90;
+		 car.centerX=60;
+		 car.centerY=60;
+		 car.body.velocity.x=0;
+		 car.body.velocity.y=0;
+		 velocity=2;
+		 cx=60;
+		 cy=60;
+		 return;
+	     }
+	     
+	     /*Update Velocity. If user presses keys, disable self-driving. */
+             if (cursors.up.isDown) {
+		 velocity+=5;
+		 auto=false;
+             }
+
+             if (cursors.down.isDown) {
+		 velocity-=5;
+		 auto=false;
+	     }
+
+	     if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+		 velocity=0;
+		 auto=false;
+	     }
+	     
+	     
+	     /*Set X and Y Speed of Velocity*/
+	     car.body.velocity.x = velocity * Math.cos((car.angle-90)*0.01745);
+	     car.body.velocity.y = velocity * Math.sin((car.angle-90)*0.01745);
+	     
+	     /*Rotation of Car*/
+	     if (cursors.left.isDown){
+		 car.body.angularVelocity = -35*(velocity/1000);
+		 auto=false;
+	     }
+	     else if (cursors.right.isDown){
+		 car.body.angularVelocity = 35*(velocity/1000);
+		 auto=false;
+	     }
+	     else
+		 car.body.angularVelocity = 0;
+
+	     cx = Math.round(car.centerX);
+	     cy = Math.round(car.centerY);
+	     if ( car.angle<0 ) {
+		 da = (360+car.angle);
+	     } else {
+		 da = car.angle;
+	     }
+	     
+	     sxFR = Math.round(cx+((Math.cos((car.angle-80) * (Math.PI / 180)))*75));
+	     syFR = Math.round(cy+((Math.sin((car.angle-80) * (Math.PI / 180)))*75));	     
+	     sxFL = Math.round(cx+((Math.cos((car.angle-100) * (Math.PI / 180)))*75));
+	     syFL = Math.round(cy+((Math.sin((car.angle-100) * (Math.PI / 180)))*75));	     
+	     
+	     sxR = Math.round(cx+((Math.cos((car.angle-60) * (Math.PI / 180)))*35));
+	     syR = Math.round(cy+((Math.sin((car.angle-60) * (Math.PI / 180)))*35));	     
+	     sxL = Math.round(cx+((Math.cos((car.angle-120) * (Math.PI / 180)))*35));
+	     syL = Math.round(cy+((Math.sin((car.angle-120) * (Math.PI / 180)))*35));	     
+	     
+	     sxA = Math.round(cx+((Math.cos((car.angle-90) * (Math.PI / 180)))*120));
+	     syA = Math.round(cy+((Math.sin((car.angle-90) * (Math.PI / 180)))*120));	     
+
+	     dotFL.centerX = sxFL;
+	     dotFL.centerY = syFL;
+	     dotFR.centerX = sxFR;
+	     dotFR.centerY = syFR;
+	     
+	     dotL.centerX = sxL;
+	     dotL.centerY = syL;
+	     dotR.centerX = sxR;
+	     dotR.centerY = syR;
+	     
+	     dotA.centerX = sxA;
+	     dotA.centerY = syA;
+
+	     cFL = bitmap.getPixel32( Math.round(sxFL), Math.round(syFL) );
+	     cFR = bitmap.getPixel32( Math.round(sxFR), Math.round(syFR) );
+	     cL = bitmap.getPixel32( Math.round(sxL), Math.round(syL) );
+	     cR = bitmap.getPixel32( Math.round(sxR), Math.round(syR) );
+	     cA = bitmap.getPixel32( Math.round(sxA), Math.round(syA) );
+
+	     if (frame%10==0) {
+		 text.setText(frame+"\nFR="+ctext(cFR)+" FL="+ctext(cFL)+"\nR="+ctext(cR)+" L="+ctext(cL)+"\nA="+ctext(cA));
+	     }
+	     
+	     if( auto==true )
+		 selfdrive1();	    
+	 }
+	 
+	 
+	</script>
+    </body>
+</html>

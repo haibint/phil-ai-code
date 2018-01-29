@@ -1,0 +1,124 @@
+<html>
+    <head>
+	<title>Recommendation demo</title>
+	
+	<!-- CSS goes here -->
+	<style>
+	 body {
+	     background-color: #FFF; /* example... */
+	 }
+	</style>
+	
+	<!-- import convnetjs library -->
+	<script src="convnet-min.js"></script>
+	
+	<!-- javascript goes here -->
+	<script type="text/javascript">
+
+	 
+	 var net; // declared outside -> global variable in window scope
+	 var train=1; // 1: train; 0: don't train, just predict
+	 net = new convnetjs.Net();
+
+	 function start() {
+	     
+	     // Hating it is 0. Half-liking is 0.5. Totally liking is 1.
+	     // 1. Teacher: If class teacher is funny, I like it. (0.7)
+	     // 2. Tech: If the topic is about technology, I like it. (0.9)
+	     // 3. Bus: If it's about business, I don't like it. (0.0)
+	     // 4. Read: If it requires a lot of reading, I don't like it. (0.2)
+	     // 5. Job: If it is good for my future job, I like it. (0.8)
+	     // 6. Lang: If it's about languages, I like it. (0.6)
+	     // 7. Math: If has mathematics in it, I don't like it. (0.1)
+	     // 8. Early: If it's early in the morning, I don't like it. (0.4)
+	     // 9. Summer: If it's a summer course, I like it. (0.6)
+	     // 10. Grade: If it's easy to get a good grade, I like it. (0.75)
+	     // 11. Chin: If it's taught in Chinese, I don't like it. (0)
+
+	     var my_data = [
+		 // Teacher, Tech, Bus, Read, Job, Lang, Math, Early, Summer, Grade, Chin
+		 1,0,0,0,0,0,0,0,0,0,0,0.7, // Teacher
+		 0,1,0,0,0,0,0,0,0,0,0,0.9, // Tech
+		 0,0,1,0,0,0,0,0,0,0,0,0, // Bus
+		 0,0,0,1,0,0,0,0,0,0,0,0.2, // Read
+		 0,0,0,0,1,0,0,0,0,0,0,0.8, // Job
+		 0,0,0,0,0,1,0,0,0,0,0,0.6, // Lang
+		 0,0,0,0,0,0,1,0,0,0,0,0.1, // Math
+		 0,0,0,0,0,0,0,1,0,0,0,0.4, // Early
+		 0,0,0,0,0,0,0,0,1,0,0,0.6, // Summer
+		 0,0,0,0,0,0,0,0,0,1,0,0.75, // Grade
+		 0,0,0,0,0,0,0,0,0,0,1,0 // Chin
+	     ];
+
+
+
+	     if (train==1) {
+		 // create a net out of it
+		 var d = 12;
+		 var layer_defs = [];
+		 layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:(d-1)});
+		 layer_defs.push({type:'fc', num_neurons:4, activation:'tanh'});
+		 layer_defs.push({type:'regression', num_neurons:1});
+		 net.makeLayers(layer_defs);
+		 var trainer = new convnetjs.SGDTrainer(net, {learning_rate:0.01, momentum:0.2, batch_size:1, l2_decay:0.001});
+
+		 var learn = function () {
+		     for(var j = 0; j < 1000; j++){
+			 for (var i = 0; i < my_data.length; i+=d) {
+			     var data = my_data.slice(i, i + (d-1));
+			     var real_value = [my_data[i + (d-1)]];
+			     console.log("X:"+i+" "+data+" -> "+ real_value );
+			     var x = new convnetjs.Vol(data);
+			     trainer.train(x, real_value);
+			     var predicted_values = net.forward(x);
+			     console.log("data: [" + data + "] -> value: " + real_value);
+			     console.log("prediction in learn stage is: " + predicted_values.w[0]);
+			 }
+		     }
+
+		 }
+		 learn();
+		 train=0;
+	     }
+
+	     console.log("Jumping here.");
+	     
+	     var predict = function(data){
+		 var x = new convnetjs.Vol(data);
+		 var predicted_value = net.forward(x);
+		 return predicted_value.w[0];
+	     }
+
+	     var item = JSON.parse("[" + document.getElementById('in').value + "]"); 
+	     document.getElementById('item').innerHTML=item;
+	     var names=["Teacher", "Tech", "Bus", "Read", "Job", "Lang", "Math", "Early", "Summer", "Grade", "Chin"];
+	     var p=predict(item);
+	     var recommend;
+	     if (p>0.5) {recommend="Take";} else {recommend="Avoid";}
+	     console.log("predicted value for [" + item + "] is: " + p);
+	     var x=document.getElementById('out');
+	     //x.innerHTML="";
+	     var bold1="";
+	     var bold2="";
+	     for (var i=0; i<11; i++)
+		 //if (item[i]!="0") {bold1="<b>"; bold2="</b>";} else {bold1=""; bold2="";}
+	     x.innerHTML += names[i]+"="+item[i]+"&nbsp;&nbsp;  ";
+	     x.innerHTML += "<br/>Action: "+p+" <b>("+recommend+")</b><p/>";
+	 }
+	 
+	</script>
+    </head>
+    
+    <body onload="start()">
+	<h2>Course recommendation engine</h2>
+	<p>This is the principle on which recommendations, for example from YouTube or Amazon, work.</p>
+	<hr/>
+	<form action="javascript:start()">
+	    <input id="in" type="text" value="0,0,0,0,0,0,0,0,0,0,0">
+	    <input type=submit>
+	</form>
+
+	<div id="item"></div><p/>
+	<div id="out"></div>
+    </body>
+</html>

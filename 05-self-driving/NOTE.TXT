@@ -1,0 +1,9 @@
+3 versions:
+
+classic.html: classic version, hard coded algorithm
+ann.html: artificial neural network, trained by looking at human driver logfile
+rl.html: reinforcement learning trained network (punishment for touching road side with car, reward for doing 10 steps without touching road side)
+
+
+
+

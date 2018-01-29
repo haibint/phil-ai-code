@@ -1,0 +1,82 @@
+<html>
+    <head>
+        <title>Artificial neural network (manual learning)</title>
+        <script type="text/javascript">
+
+	 function thr( value ){
+	     if (value>=0.5) {
+		 return 1;
+	     }
+	     else {
+		 return 0;
+	     }
+	 }
+	 
+	 function calc() {
+	     i1=document.getElementById( "i1" ).value;
+	     i2=document.getElementById( "i2" ).value;
+	     hw1a=document.getElementById( "hw1a" ).value;
+	     hw1b=document.getElementById( "hw1b" ).value;
+	     hw1c=document.getElementById( "hw1c" ).value;
+	     hw2a=document.getElementById( "hw2a" ).value;
+	     hw2b=document.getElementById( "hw2b" ).value;
+	     hw2c=document.getElementById( "hw2c" ).value;
+	     hw3a=document.getElementById( "hw3a" ).value;
+	     hw3b=document.getElementById( "hw3b" ).value;
+	     hw3c=document.getElementById( "hw3c" ).value;
+	     hw4a=document.getElementById( "hw4a" ).value;
+	     hw4b=document.getElementById( "hw4b" ).value;
+	     hw4c=document.getElementById( "hw4c" ).value;
+	     ow1=document.getElementById( "ow1" ).value;
+	     ow2=document.getElementById( "ow2" ).value;
+	     ow3=document.getElementById( "ow3" ).value;
+	     ow4=document.getElementById( "ow4" ).value;
+	     
+	     h1=thr((i1*hw1a)+(i2*hw1b)+hw1c);
+	     h2=thr((i1*hw2a)+(i2*hw2b)+hw2c);
+	     h3=thr((i1*hw3a)+(i2*hw3b)+hw3c);
+	     h4=thr((i1*hw4a)+(i2*hw4b)+hw4c);
+
+	     o1=thr((h1*ow1)+(h2*ow2)+(h3*ow3)+(h4*ow4));
+
+	     document.getElementById("h1").innerHTML=h1;
+	     document.getElementById("h2").innerHTML=h2;
+	     document.getElementById("h3").innerHTML=h3;
+	     document.getElementById("h4").innerHTML=h4;
+	     
+	     document.getElementById("o1").innerHTML=o1;
+	 }
+	 
+	</script>
+    </head>
+    <body>
+	<table border ="1">
+	    <tr>
+		<td>Input: </td><td><input type="text" value="1" size="5" id="i1"></td><td><input type="text" value="1" size="5" id="i2"></td><td><div id="i3">1</div></td><td><button onClick="calc();">Go!</button></td>
+	    </tr>
+	    <tr><td colspan="5" align="center">Fully connected</td></tr>
+	    <tr>
+		<td>Hidden weights: </td><td bgcolor="#ffffa0"><input type="text" value="1" size="5" id="hw1a"></td><td bgcolor="#ffffa0"><input type="text" value="1" size="5" id="hw1b"></td><td bgcolor="#ffffa0"><input type="text" value="1" size="5" id="hw1c"></td><td bgcolor="#e0e0ff"><input type="text" value="1" size="5" id="hw2a"></td>
+		<td bgcolor="#e0e0ff"><input type="text" value="1" size="5" id="hw2b"></td><td bgcolor="#e0e0ff"><input type="text" value="1" size="5" id="hw2c"></td><td bgcolor="#ffe0e0"><input type="text" value="1" size="5" id="hw3a"></td><td bgcolor="#ffe0e0"><input type="text" value="1" size="5" id="hw3b"></td>
+		<td bgcolor="#ffe0e0"><input type="text" value="1" size="5" id="hw3c"></td><td bgcolor="#e0ffe0"><input type="text" value="1" size="5" id="hw4a"></td><td bgcolor="#e0ffe0"><input type="text" value="1" size="5" id="hw4b"></td><td bgcolor="#e0ffe0"><input type="text" value="1" size="5" id="hw4c"></td>
+	    </tr>
+	    <tr>
+		<td>Hidden: </td><td colspan="3" bgcolor="#ffffa0"><div id="h1"></div></td><td colspan="3" bgcolor="#e0e0ff"><div id="h2"></div></td><td colspan="3" bgcolor="#ffe0e0"><div id="h3"></div></td><td colspan="3" bgcolor="#e0ffe0"><div id="h4"></div></td>
+	    </tr>
+	    <tr><td colspan="5" align="center">Fully connected</td></tr>
+	    <tr>
+		<td>Output weights: </td><td bgcolor="#ffffa0"><input type="text" value="1" size="5" id="ow1"></td>
+		<td bgcolor="#e0e0ff"><input type="text" value="1" size="5" id="ow2"></td>
+		    <td bgcolor="#ffe0e0"><input type="text" value="1" size="5" id="ow3"></td>
+		<td bgcolor="#e0ffe0"><input type="text" value="1" size="5" id="ow4"></td>
+	    </tr>
+	    <tr>
+		<td>Output: </td><td colspan="4"><div id="o1"></div></td>
+	    </tr>
+	</table>
+	<p>AND: H = 0.3/0.3/0 -- 0/0/0 -- 0.3/0.3/0 -- 0.4/0.4/0 &nbsp; &nbsp; O = 1 -- 1 -- 1 -- 1</p>
+	<p>OR: 0.4/0.4/0 -- 0.4/0.4/0 -- 0.5/0.5/0 -- 0.4/0.4/0  &nbsp; &nbsp; O = 1 -- 1 -- 1 -- 1</p>
+	<p>XOR:</p>
+
+    </body>
+    

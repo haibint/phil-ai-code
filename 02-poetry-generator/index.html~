@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<head>
+</head>
+<body>
+
+    <!-- TODO: Preload different rule-sets: Christmas, love poem, communist march, philosophy wisdom. -->
+    
+    <h1>Poetry generator</h1>
+
+    <p><i>Try things out below, but remember: what you type below will not be saved and will be lost if you reload the page. Please save your rules yourself by copy&pasting them into a text document on your own computer!</i></p>
+
+    Number of lines: <input type="text" id="len" value="7" size="4"><p/>
+    
+    <table width="100%" border="1">
+	<tr>
+	    <td width="50%">
+		<textarea id="rules" rows="30" cols="90" autofocus wrap="soft">
+		</textarea>
+		<br clear="all" />
+		<button onclick="rulesMinimal()">Minimal demo</button>
+		<button onclick="rulesStory()">Story</button>
+		<button onclick="rulesCommunist()">Communist march</button>&nbsp;&nbsp;&nbsp;&nbsp;
+		<button onclick="makePoem()">Make a poem!</button>
+	    </td>
+	    <td align="left" valign="top">
+		<h3>Generated poem</h3>
+		<div id="poem">...</div>
+	    </td>
+	</tr>
+    </table>
+
+    <script>
+     // Pattern collections
+
+     rules["minimal"] = "// Lines beginning with // are comments. They don't do anything.\n\
+// Lines beginning with @ are sentence patterns.\n\
+// Lines beginning with % are vocabulary.\n\
+// Empty lines are ignored.\n\
+\n\
+@My {noun:singular:abstract:ethereal} is a {noun:singular:concrete:poetic}.\n\
+@All {noun:plural:concrete:path} lead to my {noun:plural:concrete:poetic}.\n\
+@Oh {noun:plural:poetic}! How can I ever {verb:mental} you?\n\
+@Why are my {noun:plural:poetic} so {adjective}?\n\
+@{noun:noarticle} is {comparison} a {noun:singular:poetic}.\n\
+\n\
+%door:noun:singular:concrete:path\n\
+%doors:noun:plural:concrete:path\n\
+%paths:noun:plural:concrete:path\n\
+%streets:noun:plural:concrete:path\n\
+%avenues:noun:plural:concrete:path\n\
+%soul:noun:singular:abstract:ethereal\n\
+%memory:noun:singular:abstract:ethereal\n\
+%heart:noun:singular:abstract:ethereal\n\
+%mind:noun:singular:abstract:ethereal\n\
+%happiness:noun:singular:abstract:ethereal\n\
+%sadness:noun:singular:abstract:ethereal\n\
+%loneliness:noun:singular:abstract:ethereal\n\
+%love:noun:singular:abstract:ethereal\n\
+\n\
+%youth:noun:singular:abstract:noarticle\n\
+%truth:noun:singular:abstract:noarticle\n\
+%loneliness:noun:singular:abstract:noarticle\n\
+%faith:noun:singular:abstract:noarticle\n\
+%deception:noun:singular:abstract:noarticle\n\
+\n\
+%feather:noun:singular:concrete:poetic\n\
+%flower:noun:singular:concrete:poetic\n\
+%star:noun:singular:concrete:poetic\n\
+%ship:noun:singular:concrete:poetic\n\
+%beast:noun:singular:concrete:poetic\n\
+%light:noun:singular:concrete:poetic\n\
+%stars:noun:plural:concrete:poetic\n\
+%feathers:noun:plural:concrete:poetic\n\
+%flowers:noun:plural:concrete:poetic\n\
+%lights:noun:plural:concrete:poetic\n\
+%memories:noun:plural:concrete:poetic\n\
+%friends:noun:plural:concrete:poetic\n\
+%thoughts:noun:plural:concrete:poetic\n\
+%stars:noun:plural:concrete:poetic\n\
+%trust:verb:mental\n\
+%believe:verb:mental\n\
+%love:verb:mental\n\
+%fear:verb:mental\n\
+%know:verb:mental\n\
+%see:verb:mental\n\
+%forgive:verb:mental\n\
+%only:comparison\n\
+%nothing but:comparison\n\
+%greater than:comparison\n\
+%nothing more than:comparison\n\
+%merely:comparison\n\
+%nameless as:comparison\n\
+%red:adjective\n\
+%green:adjective\n\
+%fresh:adjective\n\
+%hidden:adjective\n\
+%broken:adjective\n\
+%forgotten:adjective\n\
+%lost:adjective\n\
+%beautiful:adjective\n\
+%dark:adjective\n";
+
+     rules["communist"] = "// Lines beginning with // are comments. They don't do anything.\n\
+// Lines beginning with @ are sentence patterns.\n\
+// Lines beginning with % are vocabulary.\n\
+// Empty lines are ignored.\n\
+\n\
+@{noun:people:plural} {verb:action}!\n\
+@Our {noun:singular:abstract} is a {noun:singular:concrete:poetic}.\n\
+@The enemies of our {noun:political} will {verb:fear} like {noun:plural:weak}.\n\
+@Oh {noun:plural:people}! How {adjective:size} is your {noun:feeling}?\n\
+\n\
+%people:noun:people:plural\n\
+%workers:noun:people:plural\n\
+%comrades:noun:people:plural\n\
+%friends:noun:people:plural\n\
+%farmers:noun:people:plural\n\
+\n\
+%unite:verb:action\n\
+%march:verb:action\n\
+%storm forward:verb:action\n\
+%rise:verb:action\n\
+%take courage:verb:action\n\
+\n\
+%cause:noun:singular:abstract\n\
+%fight:noun:singular:abstract\n\
+%sacrifice:noun:singular:abstract\n\
+%love:noun:singular:abstract\n\
+%life:noun:singular:abstract\n\
+%freedom:noun:singular:abstract\n\
+\n\
+%flower:noun:singular:concrete:poetic\n\
+%star:noun:singular:concrete:poetic\n\
+%butterfly:noun:singular:concrete:poetic\n\
+%feather:noun:singular:concrete:poetic\n\
+%raindrop:noun:singular:concrete:poetic\n\
+\n\
+%freedom:noun:singular:political\n\
+%country:noun:singular:political\n\
+%party:noun:singular:political\n\
+%comrades:noun:plural:political\n\
+%cause:noun:plural:political\n\
+\n\
+%tremble:verb:fear\n\
+%fear:verb:fear\n\
+%flee:verb:fear\n\
+%beg for mercy:verb:fear\n\
+%perish:verb:fear\n\
+\n\
+%leaves in the wind:noun:plural:weak\n\
+%falling leaves:noun:plural:weak\n\
+%lost summer nights:noun:plural:weak\n\
+%butterflies:noun:plural:weak\n\
+%forgotten promises:noun:plural:weak\n\
+\n\
+%big:adjective:size\n\
+%great:adjective:size\n\
+%gigantic:adjective:size\n\
+%small:adjective:size\n\
+%tiny:adjective:size\n\
+%all-encompassing:adjective:size\n\
+\n\
+%fear:noun:singular:feeling\n\
+%belief:noun:singular:feeling\n\
+%compassion:noun:singular:feeling\n\
+%hatred:noun:singular:feeling\n\
+%love:noun:singular:feeling\n\
+%forgiveness:noun:singular:feeling\n";
+
+     rules["story"] = "// Lines beginning with // are comments. They don't do anything.\n\
+// Lines beginning with @ are sentence patterns.\n\
+// Lines beginning with % are vocabulary.\n\
+// Empty lines are ignored.\n\
+\n\
+@{noun:people:name1} {verb:goinout} {noun:place}.\n\
+@{noun:people:name1} {verb:goinout} {noun:place}.\n\
+@{noun:people:name1} feels {adjective:feeling}.\n\
+@{noun:people:name2} is {adjective:feeling}.\n\
+@That is {adjective:evaluation}.\n\
+@Without {noun:people:name2} every day is {adjective:feeling}.\n\
+@{noun:people:name1} gives a {noun:possession} to {noun:people:name2}.\n\
+@{noun:people:name1} waits for {noun:people:name2} to {verb2}.\n\
+@{noun:people:name2} hopes to {verb:interaction} {noun:people:name1}.\n\
+@Not everything is {state}.\n\
+@The {noun:people:job} {verb3} {noun:people:name1}.\n\
+@The {noun:people:job} {verb3} {noun:people:name2}.\n\
+\n\
+%John:noun:people:name1\n\
+%Mary's son:noun:people:name1\n\
+%Peter:noun:people:name2\n\
+%Mary:noun:people:name2\n\
+\n\
+%policeman:noun:people:job\n\
+%delivery boy:noun:people:job\n\
+%priest:noun:people:job\n\
+%doctor:noun:people:job\n\
+\n\
+%easy:state\n\
+%hard:state\n\
+%as it seems:state\n\
+%clear:state\n\
+%bright:state\n\
+%quiet:state\n\
+\n\
+%observes:verb3\n\
+%listens to:verb3\n\
+%believes:verb3\n\
+%trusts:verb3\n\
+%distrusts:verb3\n\
+\n\
+%be quiet:verb2\n\
+%go away:verb2\n\
+%come closer:verb2\n\
+\n\
+%goes into:verb:goinout\n\
+%leaves:verb:goinout\n\
+%escapes:verb:goinout\n\
+%storms into:verb:goinout\n\
+%walks out of:verb:goinout\n\
+\n\
+%the office:noun:place\n\
+%Mary's home:noun:place\n\
+%John's home:noun:place\n\
+%the hospital:noun:place\n\
+%the police station:noun:place\n\
+%the park:noun:place\n\
+%the lecture hall:noun:place\n\
+\n\
+%sad:adjective:feeling\n\
+%happy:adjective:feeling\n\
+%hopeful:adjective:feeling\n\
+%empty:adjective:feeling\n\
+%tired:adjective:feeling\n\
+\n\
+%strange:adjective:evaluation\n\
+%remarkable:adjective:evaluation\n\
+%crazy:adjective:evaluation\n\
+%fine:adjective:evaluation\n\
+%rare:adjective:evaluation\n\
+\n\
+%coin:noun:possession\n\
+%credit card:noun:possession\n\
+%wedding ring:noun:possession\n\
+%phone number:noun:possession\n\
+%flowers:noun:possession\n\
+%birth certificate:noun:possession\n\
+\n\
+%make a deal with:verb:interaction\n\
+%kiss:verb:interaction\n\
+%hug:verb:interaction\n\
+%rob:verb:interaction\n\
+%forget:verb:interaction\n\
+%question:verb:interaction\n\
+%see:verb:interaction\n";
+
+     
+     // Rough program structure:
+     // 1. Organise the vocabulary into a data structure for easy look up
+     // 2. Clear any old poems
+     // 3. In a loop (over desired number of lines):
+     // 3.1 Grab a random sentence pattern
+     // 3.2. Get matching vocabulary to fill the variable spaces
+     // 3.3. Add line to poem div
+
+     
+     var voc = [];  //the class that will hold the entries
+     var poem = "";
+
+     function filterOnlyRules( line ) {
+	 if( line.startsWith("@") ){
+	     return( true );
+	 }
+     }
+     
+     function filterOnlyVoc( line ) {
+	 if( line.startsWith("%") ){
+	     return( true );
+	 }
+     }
+
+     function rulesMinimal() {
+	 document.getElementById("rules").innerHTML = rules["minimal"];
+     }
+
+     function rulesStory() {
+	 document.getElementById("rules").innerHTML = rules["story"];
+     }
+
+     function rulesCommunist() {
+	 document.getElementById("rules").innerHTML = rules["communist"];
+     }
+
+
+     function parseVocLine( index, line ) {
+	 items = line.split(":");
+	 var v=[];
+	 v.word = items[0].substring(1,30)  // get rid of the % marker and limit length in case sth goes wrong
+	 v.props = [];
+	 for (var i=1; i<items.length; i++ ) {
+	     v.props.push( items[i] );
+	 }
+
+	 voc.push( v ); // add it to the global vocabulary
+     }
+     
+     function makePoem() {
+	 // Get vocabulary and rules
+	 voc_raw = document.getElementById("rules").value.split("\n").filter(filterOnlyVoc);
+	 rules_raw = document.getElementById("rules").value.split("\n").filter(filterOnlyRules);
+
+	 // 1. Organise the vocabulary into a class for easy look up
+	 for ( var i=0; i<voc_raw.length; i++ ) {
+	     parseVocLine( i, voc_raw[i] );
+	 }
+
+	 // 2. Clear any old poems
+	 document.getElementById("poem").innerHTML = "";
+	 poem = "";
+
+	 // 3. In a loop (over desired number of lines):
+
+	 var desired_length = document.getElementById("len").value;	 
+
+	 for ( var lineno=0; lineno<desired_length; lineno++ )
+	     {
+		 var matchno = 0;
+		 // 3.1 Grab a random sentence pattern
+		 var template = rules_raw[Math.floor(Math.random()*rules_raw.length)];
+		 var patterns = template.match(/\{([^\}]+)\}/g);
+
+		 // 3.2. Get matching vocabulary to fill the variable spaces
+		 // We have an array of patterns to replace. Iterate through the array and try to match a vocab item
+		 // for each pattern
+		 for ( var pc=0; pc<patterns.length; pc++ ) {
+		     // patterns[pc] now looks like: {noun:singular:abstract:ethereal}
+		     // Remove the brackets:
+		     var pat=patterns[pc].substr(1,(patterns[pc].length)-2);
+		     // Split it into words (specifiers)
+		     var musthave=pat.split(":");
+		     // Find items of voc that have props that match all the specs items (at least)
+		     var matches=[];  // Array to store results (words that match, ready for later use)
+		     for( var v in voc ) {
+			 var vhas=voc[v].props;
+			 matchno=0;
+			 for ( var m in musthave ) {
+			     var mh=musthave[m];
+			     // alert( mh );
+			     // mh is one of the must-have properties for this pattern; Search if the current voc item has all these properties; If so, push it to the result array
+			     if ( vhas.indexOf( mh ) > -1 ) {
+				 matchno+=1;
+			     }
+			 }
+			 if (matchno==musthave.length) {
+			     matches.push( voc[v].word );
+			 }
+		     }
+
+		     // Here we have our matching words. Pick one at random and replace it in the template! 
+		     // alert( "Matches: "+ matches);
+		     var repl = matches[Math.floor(Math.random()*matches.length)];
+
+		     // Our sentence template is in template; find the first pattern and replace it
+		     template = template.replace(/\{([^\}]+)\}/, repl);		     
+		 }
+		 
+		 // 3.3. Add line to poem IF IT HAS NOT BEEN USED BEFORE
+		 if (poem.indexOf( template[1].toUpperCase()+template.substring(2)) == -1 ) {
+		     poem=poem+"<br/>"+template[1].toUpperCase()+template.substring(2);
+		 } else {
+		     lineno=lineno-1; // don't count the duplicate line
+		 }
+
+		 document.getElementById("poem").innerHTML = poem+"<p/>";
+	     }
+     }
+
+     document.getElementById("rules").innerHTML = rules["minimal"];
+     
+    </script> 
+</body>
