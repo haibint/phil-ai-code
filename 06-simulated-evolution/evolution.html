@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Gamedev Canvas Workshop</title>
+        <style>
+        	* { padding: 0; margin: 0; }
+        	canvas { background: #eee; display: block; margin: 0 auto; }
+        	button { background-color: #4CAF50; font-size: 16px; text-align: center;}
+        </style>
+        <script src="jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="Probability.js"></script>
+    </head>
+    <body>
+        <button id="start" onclick="game_start()">Start</button>
+        <button id="stop" onclick="game_stop()">Stop</button>
+        <canvas width="800" height="800" id="world"></canvas>
+        <script type="text/javascript">
+            var canvas = document.getElementById("world");
+            var ctx = canvas.getContext("2d");
+            var food_loop;
+            var move_loop;
+            var food_array = [];
+            var creature_array = [];
+
+            // a helper function to do random in range
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            
+            // define Creature object.
+            function Creature(up, left, right, down, green_food, red_food, x_position, y_position) {
+                this.age = 0;
+                this.health = 100;
+                this.up = up;
+                this.left = left;
+                this.right = right;
+                this.down = down;
+                this.green_food = green_food;
+                this.red_food = red_food;
+                this.color = "blue";
+                this.x_position = x_position;
+                this.y_position = y_position;
+                this.speed = 10;
+            }
+            
+            // define Food object.
+            function Food(color) {
+                this.color = color;
+                this.value = 10;
+                this.x_position = 10 * getRandomInt(1, 80);
+                this.y_position = 10 * getRandomInt(1, 80);
+            }
+            
+            
+            // a function get called every some seconds.
+            function create_food() {
+                //good foods
+                if (food_array.length < 100) {
+                    var good_food = new Food("green");
+                    food_array.push(good_food);
+                    ctx.beginPath();
+                    ctx.rect(good_food.x_position, good_food.y_position, 10, 10);
+                    ctx.fillStyle = "green";
+                    ctx.fill();
+                    ctx.closePath();
+                    
+                    //bad foods
+                    var bad_food = new Food("red")
+                    food_array.push(bad_food);
+                    ctx.beginPath();
+                    ctx.rect(bad_food.x_position, bad_food.y_position, 10,10);
+                    ctx.fillStyle = "red";
+                    ctx.fill();
+                    ctx.closePath();
+                    console.log("we have" + food_array.length + "food left.");
+                }
+                console.log("we have" + food_array.length + "food left.");
+            }
+            
+
+            function create_creature() {
+                if (creature_array.length < 100) {
+                    var random_num1 = getRandomInt(0,101);
+                    var random_num2 = getRandomInt(0, 100-random_num1);
+                    var random_num3 = getRandomInt(0, 100-random_num1-random_num2);
+                    var random_num4 = getRandomInt(0, 100-random_num1-random_num2-random_num3);
+                    var up_prob = random_num1.toString() + "%";
+                    var left_prob = random_num2.toString() + "%";
+                    var right_prob = random_num3.toString() + "%";
+                    var down_prob = random_num4.toString() + "%";
+                    console.log("the probability of the creature to go up is " + up_prob);
+                    x_position = 10 * getRandomInt(1, 80);
+                    y_position = 10 * getRandomInt(1, 80);
+                    var new_creature = new Creature(up_prob, left_prob, right_prob, down_prob,0,0, x_position, y_position);
+                    creature_array.push(new_creature);
+                    console.log("number of creatures is" + creature_array.length);
+                }
+            }
+
+            
+            function move(creature) {
+                //if a creature die, clear its drawing.
+                if (creature.health < 1) {
+                    ctx.clearRect(creature.x_position, creature.y_position, 10, 10);
+                }
+
+                // draw original position
+                ctx.beginPath();
+                ctx.rect(creature.x_position, creature.y_position, 10, 10);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.closePath();
+                
+                // update
+                ctx.clearRect(creature.x_position, creature.y_position, 10, 10);
+                
+                //set the direction of each move
+                var change_direction = new Probability({
+                    p: creature.up,                      /* the probability by that ... */
+                        f: function () {                                  /* ... this function is called */
+                            creature.y_position = creature.y_position - creature.speed;   // These two lines below will let the creature keep direction, which is to keep going right
+                        }
+                    }, {
+                        p: creature.left,  
+                        f: function () {
+                            creature.x_position = creature.x_position - creature.speed;
+                        }
+                    }, {
+                        p: creature.right,
+                        f: function () {
+                            creature.x_position = creature.x_position + creature.speed;
+                        }
+                    }, {
+                        p: creature.down,
+                        f: function () {
+                            creature.y_position = creature.y_position + creature.speed;
+                        }
+                    });
+                
+                change_direction();
+                
+                // draw new position of a creature.
+                ctx.beginPath();
+                ctx.rect(creature.x_position, creature.y_position, 10, 10);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.closePath();
+            }
+            
+
+            function move_everyone () {
+                for (var i = 0; i < creature_array.length; i++) {
+                    move(creature_array[i]);
+                    eat(creature_array[i]);
+                    hungry_and_die(creature_array[i]);
+                }
+            }
+
+
+            function eat(creature) {
+                // console.log(first_creature.x_position, first_creature.y_position);
+                // console.log(typeof(food_array[1].x_position))
+                // console.log(food_array);
+                for (var i = 0; i < food_array.length; i++) {
+                    if (creature.x_position === food_array[i].x_position && creature.y_position === food_array[i].y_position) {
+                            food_array.pop(food_array[i]);
+                            creature.health += 1;
+                    }
+                }
+            }
+
+
+            function hungry_and_die(creature) {
+                creature.health -= 2;
+                if (creature.health < 1) {
+                    console.log("a creature just die.")
+                    creature_array.pop(creature);
+                    console.log(creature_array.length + "left after a death.")
+                }
+            }
+
+
+            function game_start() {
+                creature_loop = setInterval(create_creature, 1000);
+                food_loop = setInterval(create_food, 500);
+                move_loop = setInterval(move_everyone, 500);
+            }
+            
+            // a helper function to stop the interval loop
+            function game_stop() {
+                clearInterval(food_loop);
+                clearInterval(move_loop);
+                clearInterval(creature_loop);
+            }
+
+        </script>
+    </body>
+</html>
+
